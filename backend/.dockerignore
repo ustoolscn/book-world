@@ -1,0 +1,6 @@
+.env
+*.log
+server.local.log
+dist/
+tmp/
+.git/
