@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: book-world
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: book-world-secret
+  namespace: book-world
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://postgres:postgres@10.42.0.1:5432/book_world?sslmode=disable"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: book-world-backend-config
+  namespace: book-world
+data:
+  ADDR: ":8080"
+  DEFAULT_MODEL: "gpt-4o-mini"
+  CONTEXT_CHAR_BUDGET: "48000"
+  REPLY_CHAR_RESERVE: "6000"
+  FRONTEND_ORIGIN: "http://book-world.cooper-api.com"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-world-backend
+  namespace: book-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-world-backend
+  template:
+    metadata:
+      labels:
+        app: book-world-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/ustoolscn/book-world/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: book-world-backend-config
+            - secretRef:
+                name: book-world-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: book-world
+spec:
+  selector:
+    app: book-world-backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-world-frontend
+  namespace: book-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-world-frontend
+  template:
+    metadata:
+      labels:
+        app: book-world-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/ustoolscn/book-world/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-world-service
+  namespace: book-world
+spec:
+  selector:
+    app: book-world-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: book-world-ingress
+  namespace: book-world
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: book-world.cooper-api.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: book-world-service
+                port:
+                  number: 80
