@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"book-world/backend/internal/config"
@@ -49,7 +51,23 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("PATCH /api/admin/world-info/{id}", s.Auth(http.HandlerFunc(s.UpdateAdminWorldInfo)))
 	mux.Handle("DELETE /api/admin/world-info/{id}", s.Auth(http.HandlerFunc(s.DeleteAdminWorldInfo)))
 	mux.Handle("POST /api/chat/stream", s.Auth(http.HandlerFunc(s.StreamChat)))
+	if s.Config.StaticDir != "" {
+		mux.Handle("GET /", http.HandlerFunc(s.ServeFrontend))
+	}
 	return s.Middleware(mux)
+}
+
+func (s *Server) ServeFrontend(w http.ResponseWriter, r *http.Request) {
+	path := filepath.Clean(strings.TrimPrefix(r.URL.Path, "/"))
+	if path == "." || path == "" {
+		path = "index.html"
+	}
+	fullPath := filepath.Join(s.Config.StaticDir, path)
+	if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+		http.ServeFile(w, r, fullPath)
+		return
+	}
+	http.ServeFile(w, r, filepath.Join(s.Config.StaticDir, "index.html"))
 }
 
 func (s *Server) Middleware(next http.Handler) http.Handler {

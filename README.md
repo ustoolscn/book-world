@@ -17,15 +17,13 @@ http://localhost:3000
 The compose stack starts:
 
 - `postgres`: PostgreSQL database
-- `backend`: Go API server
-- `frontend`: Nginx-served Vue app, proxying `/api` to `backend`
+- `book-world`: one Go server that serves both `/api` and the built Vue frontend
 
-## GitHub Container Images
+## GitHub Container Image
 
-The workflow at `.github/workflows/docker-images.yml` builds and publishes two images to GitHub Container Registry on pushes to `main` or `master`:
+The workflow at `.github/workflows/docker-image.yml` builds and publishes one image to GitHub Container Registry on pushes to `main` or `master`:
 
-- `ghcr.io/<owner>/<repo>/backend`
-- `ghcr.io/<owner>/<repo>/frontend`
+- `ghcr.io/<owner>/<repo>:latest`
 
 Pull requests only build the images; they do not push.
 
@@ -35,6 +33,7 @@ Backend runtime variables:
 
 ```text
 ADDR=:8080
+STATIC_DIR=/app/frontend
 DATABASE_URL=postgres://postgres:postgres@postgres:5432/book_world?sslmode=disable
 DEFAULT_MODEL=gpt-4o-mini
 CONTEXT_CHAR_BUDGET=48000

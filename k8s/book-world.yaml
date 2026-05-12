@@ -17,10 +17,11 @@ stringData:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: book-world-backend-config
+  name: book-world-config
   namespace: book-world
 data:
   ADDR: ":8080"
+  STATIC_DIR: "/app/frontend"
   DEFAULT_MODEL: "gpt-4o-mini"
   CONTEXT_CHAR_BUDGET: "48000"
   REPLY_CHAR_RESERVE: "6000"
@@ -30,67 +31,29 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: book-world-backend
+  name: book-world-deployment
   namespace: book-world
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: book-world-backend
+      app: book-world
   template:
     metadata:
       labels:
-        app: book-world-backend
+        app: book-world
     spec:
       containers:
-        - name: backend
-          image: ghcr.io/ustoolscn/book-world/backend:latest
+        - name: book-world
+          image: ghcr.io/ustoolscn/book-world:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: book-world-backend-config
+                name: book-world-config
             - secretRef:
                 name: book-world-secret
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend
-  namespace: book-world
-spec:
-  selector:
-    app: book-world-backend
-  ports:
-    - protocol: TCP
-      port: 8080
-      targetPort: 8080
-  type: ClusterIP
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: book-world-frontend
-  namespace: book-world
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: book-world-frontend
-  template:
-    metadata:
-      labels:
-        app: book-world-frontend
-    spec:
-      containers:
-        - name: frontend
-          image: ghcr.io/ustoolscn/book-world/frontend:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 80
 
 ---
 apiVersion: v1
@@ -100,11 +63,11 @@ metadata:
   namespace: book-world
 spec:
   selector:
-    app: book-world-frontend
+    app: book-world
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 80
+      port: 8080
+      targetPort: 8080
   type: ClusterIP
 
 ---
@@ -126,4 +89,4 @@ spec:
               service:
                 name: book-world-service
                 port:
-                  number: 80
+                  number: 8080

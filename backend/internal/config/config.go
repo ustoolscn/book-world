@@ -14,6 +14,7 @@ type Config struct {
 	ContextCharBudget int
 	ReplyCharReserve  int
 	FrontendOrigin    string
+	StaticDir         string
 }
 
 func Load() Config {
@@ -26,6 +27,7 @@ func Load() Config {
 		ContextCharBudget: getEnvInt("CONTEXT_CHAR_BUDGET", 48000),
 		ReplyCharReserve:  getEnvInt("REPLY_CHAR_RESERVE", 6000),
 		FrontendOrigin:    getEnv("FRONTEND_ORIGIN", "http://localhost:5173"),
+		StaticDir:         getEnv("STATIC_DIR", ""),
 	}
 }
 
